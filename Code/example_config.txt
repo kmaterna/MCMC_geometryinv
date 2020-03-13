@@ -1,0 +1,31 @@
+
+####################
+[io-config]
+gps_input_file = example_gps_6.5_325.txt
+output_dir = Outdir
+title = Strike Slip Experiment
+
+####################
+[mcmc-config]
+num_iter = 10000
+burn_in = 1000
+step_size = 0.5
+
+####################
+[compute-config]
+mode = SPARSE
+mu = 30e9 
+alpha = 0.66667
+lon0 = -121.0
+lat0 = 34.5
+Mag = 6.0
+style = None
+dx = 0
+dy = 0
+dz = 0
+length = 30
+width = uniform(0,30)
+strike = 30
+dip = uniform(0,90)
+rake = uniform(0,180)
+
