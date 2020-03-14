@@ -3,9 +3,11 @@
 # The geometry parameters are known. 
 
 import numpy as np
+import matplotlib
+matplotlib.use('PS')  # forces a certain backend behavior of matplotlib on macosx for pymc3
 import matplotlib.pyplot as plt 
 import random
-from okada_wrapper import dc3d0wrapper, dc3dwrapper
+import okada_functions
 import io_gps
 import conversion_math
 
@@ -33,37 +35,29 @@ def make_data_dc3d():
 	gps_yrange=[32.5, 36.0];
 	number_gps_points = 100; 
 
-	gps_lon=[]; 
-	gps_lat=[];
+	gps_lon=[]; gps_lat=[];
 	for i in range(number_gps_points):
 		gps_lon.append(random.uniform(gps_xrange[0], gps_xrange[1]));
 		gps_lat.append(random.uniform(gps_yrange[0], gps_yrange[1]));
 
+	# Coordinate transformation
+	gps_x=[]; gps_y=[];
+	for i in range(number_gps_points):
+		kx, ky = conversion_math.latlon2xy(gps_lon[i], gps_lat[i], lon0, lat0);
+		gps_x.append(kx);
+		gps_y.append(ky);
+
 	# Mechanical part. 
-	theta=strike-90
-	theta=np.deg2rad(theta)
-	R=np.array([[np.cos(theta),-np.sin(theta)],[np.sin(theta),np.cos(theta)]])
-	R2=np.array([[np.cos(-theta),-np.sin(-theta)],[np.sin(-theta),np.cos(-theta)]])
+	# Assumes top back corner of fault plane is located at 0,0
+	# Given strike, dip, rake, depth, alpha, strike_slip, and dip_slip...
+	# Given vectors of gps_x and gps_y...
+	# Returns vectors of gps_u, gps_v, and gps_w.
+	ux, uy, uz = okada_functions.gps_okada(strike, dip, rake, depth, L, W, alpha, strike_slip, dip_slip, gps_x, gps_y);
 
-	ux=np.zeros(np.shape(gps_lon));
-	uy=np.zeros(np.shape(gps_lon));
-	uz=np.zeros(np.shape(gps_lon));
-
-	for k in range(len(gps_lon)):
-
-		# Coordinate transformation relative to top back corner of fault plane.
-		[x, y] = conversion_math.latlon2xy(gps_lon[k],gps_lat[k],lon0,lat0);
-
-		#Calculate on rotated position
-		xy=R.dot(np.array([[x], [y]]));
-		success, u, grad_u = dc3dwrapper(alpha, [xy[0], xy[1], 0.0],
-                                 depth, dip, [0, L], [0, W],
-                                 [strike_slip, dip_slip, 0.0])
-        
-		urot=R2.dot(np.array([[u[0]], [u[1]]]))
-		ux[k]=urot[0]
-		uy[k]=urot[1]
-		uz[k]=u[2]  # vertical doesn't rotate
+	# Add some random noise
+	ux = np.add(ux, 0.001*np.random.randn(len(ux)));
+	uy = np.add(uy, 0.001*np.random.randn(len(ux)));
+	uz = np.add(uz, 0.002*np.random.randn(len(ux)));
 
 	plt.figure(figsize=(16,16))
 	plt.scatter(gps_lon, gps_lat, marker='o', s=150, c=uz, vmin=-0.015, vmax=0.015);
