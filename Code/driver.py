@@ -4,6 +4,7 @@ import sys
 import argparse, configparser
 import mcmc_collections
 import io_gps
+import do_mcmc
 
 def do_calculation():
 	args = welcome_and_parse();
@@ -70,6 +71,8 @@ def read_config(config_file):
 		print("\nComputing in MEDIUM Mode.  Should have either 6 or 7 parameters. ");
 	elif mode=="FULL":
 		print("\nComputing in FULL Mode.  Should have either 8 or 9 parameters. ");
+	elif mode=="SIMPLE_TEST":
+		print("\nComputing a simple example of Bayesian inference for y=f(x). ");
 	else:
 		print("\nERROR! Mode unrecognized - should be either SPARSE, MEDIUM, or FULL. ");
 		print("Exiting");
