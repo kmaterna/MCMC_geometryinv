@@ -32,7 +32,7 @@ def read_config(config_file):
 
 	# Basic parameters
 	gps_input_file=configobj.get('io-config','gps_input_file');
-	outdir=configobj.get('io-config','output_dir');
+	output_dir=configobj.get('io-config','output_dir');
 	title=configobj.get('io-config','title');
 	num_iter=configobj.getint('mcmc-config','num_iter');
 	burn_in=configobj.getint('mcmc-config','burn_in');
@@ -61,7 +61,7 @@ def read_config(config_file):
 	Params = mcmc_collections.Params(gps_input_file=gps_input_file, num_iter=num_iter, 
 		burn_in=burn_in, step_size=step_size, mode=mode, mu=mu, alpha=alpha, 
 		lon0=lon0, lat0=lat0, Mag=Mag, style=style, dx=dx, dy=dy, dz=dz, length=length, 
-		width=width, strike=strike, dip=dip, rake=rake, outdir=outdir, title=title);
+		width=width, strike=strike, dip=dip, rake=rake, output_dir=output_dir, title=title);
 
 	num_params = 0;
 	paramdict = Params._asdict();

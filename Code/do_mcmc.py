@@ -5,10 +5,12 @@ import sys
 import matplotlib
 matplotlib.use('PS')  # forces a certain backend behavior of matplotlib on macosx for pymc3
 import pymc3 as pm 
+import theano.tensor as tt
 import matplotlib.pyplot as plt 
 import mcmc_collections
 import okada_functions
 import conversion_math
+import function_class
 
 # High level bit: 
 # Here we will build a sampling system
@@ -23,13 +25,12 @@ import conversion_math
 # You should know what you're doing before playing with that. 
 # I can get "well-converging" BAD model that doesn't match a prior, and doesn't match the data either. 
 # It's not reproducible and sometimes depends on sample number, sometimes shows errors, sometimes not. 
-# If I don't put sigma into the model at all, it works better. 
-# 
+# If I don't put sigma into the model at all, it fits the data much better. 
+
 # Next: 
-# Corner plots with priors (optional)
-# Moving to more advanced function (Okada)
-# Step size
-# Slice Sampling
+# How to pass constants into my classes? 
+# Code review everything. 
+# Step size? 
 # Output data, model, and residual plots
 # Show the slice of the modeled fault on plots
 # Make a nice markdown. 
@@ -46,7 +47,8 @@ def parse_gps_obs(params, gps_inputs):
 		gps_x.append(kx);
 		gps_y.append(ky);
 	gps_obs_vector = np.concatenate((gps_inputs.ux, gps_inputs.uy, gps_inputs.uz));
-	return gps_x, gps_y, gps_obs_vector;
+	gps_x_vector   = np.concatenate((gps_x, gps_y));
+	return gps_x_vector, gps_obs_vector;
 
 def parse_priors(params):
 	Mag, Mag_fixed       = parse_prior(params.Mag, 'Mag');
@@ -58,11 +60,17 @@ def parse_priors(params):
 	strike, strike_fixed = parse_prior(params.strike, 'strike');
 	dip, dip_fixed       = parse_prior(params.dip, 'dip');
 	rake, rake_fixed     = parse_prior(params.rake, 'rake');
-	myPriors = mcmc_collections.Priors_object(Mag=Mag, Mag_fixed=Mag_fixed, 
-		dx=dx, dx_fixed=dx_fixed, dy=dy, dy_fixed=dy_fixed, dz=dz, dz_fixed=dz_fixed, 
-		length=length, length_fixed=length_fixed, width=width, width_fixed=width_fixed, 
-		strike=strike, strike_fixed=strike_fixed, dip=dip, dip_fixed=dip_fixed, 
-		rake=rake, rake_fixed=rake_fixed);
+	myPriors = mcmc_collections.Distributions_object(
+		Mag=Mag, Mag_fixed=Mag_fixed, Mag_std=0, 
+		dx=dx, dx_fixed=dx_fixed, dx_std=0,
+		dy=dy, dy_fixed=dy_fixed, dy_std=0,
+		dz=dz, dz_fixed=dz_fixed, dz_std=0,
+		length=length, length_fixed=length_fixed, length_std=0,
+		width=width, width_fixed=width_fixed, width_std=0,
+		strike=strike, strike_fixed=strike_fixed, strike_std=0,
+		dip=dip, dip_fixed=dip_fixed, dip_std=0,
+		rake=rake, rake_fixed=rake_fixed, rake_std=0);
+	print("My priors:");
 	print(myPriors);
 	return myPriors;
 
@@ -100,6 +108,8 @@ def parse_posterior(name, prior_value, prior_fixed, map_estimate, trace):
 	else:
 		est = map_estimate[name];
 		std = np.std(trace[name]);
+		print("MAP "+name+": %.2f +/- %.2f" % (est, std) );
+		print("-----------");
 	return est, std;
 
 def parse_posteriors(myPriors, map_estimate, trace):
@@ -113,7 +123,7 @@ def parse_posteriors(myPriors, map_estimate, trace):
 	dip, dip_std       = parse_posterior('dip',myPriors.dip, myPriors.dip_fixed, map_estimate, trace);
 	rake, rake_std     = parse_posterior('rake',myPriors.rake, myPriors.rake_fixed, map_estimate, trace);	
 
-	Posterior = mcmc_collections.Posterior_object(
+	Posterior = mcmc_collections.Distributions_object(
 		Mag=Mag, Mag_fixed=myPriors.Mag_fixed, Mag_std=Mag_std,
 		dx=dx, dx_fixed=myPriors.dx_fixed, dx_std=dx_std,
 		dy=dy, dy_fixed=myPriors.dy_fixed, dy_std=dy_std,
@@ -124,16 +134,6 @@ def parse_posteriors(myPriors, map_estimate, trace):
 		dip=dip, dip_fixed=myPriors.dip_fixed, dip_std=dip_std,
 		rake=rake, rake_fixed=myPriors.rake_fixed, rake_std=rake_std);
 	return Posterior; 
-
-def print_posterior_values(MyOutputs, name):
-	flag = name+"_fixed";
-	std_name = name+"_std";
-	if MyOutputs.Mag_fixed==True:
-		return;
-	else:
-		print("MAP "+name+": %.2f +/- %.2f" % (MyOutputs.name, MyOutputs.std_name) );
-		print("-----------");
-	return;
 
 def outputs_traces(trace, output_dir):
 	# The trace plots
@@ -151,76 +151,80 @@ def outputs_traces(trace, output_dir):
 	plt.close();
 	return
 
-# Function to compute GPS displacement vectors from Okada
-def calc_gps_disp_vector(strike, dip, rake, depth, L, W, alpha, mu, Mw, fault_x, fault_y, gps_x, gps_y):
-	# This is generally disp = f(model, position)
-	# Using Okada's formulation. 
-	# Right now having trouble passing distributions into functions 
-	# and getting reasonable values back... 
-	# Documentation says it will be done through a custom Theano Op... 
-	# Ultimately should work for giving floats or giving distributions. 
-	gps_x = [i-fault_x for i in gps_x];
-	gps_y = [i-fault_y for i in gps_y];
-	slip = conversion_math.get_slip_from_mw_area(Mw, L, W, mu);
-	strike_slip, dip_slip = conversion_math.get_lflat_dip_slip(slip, rake);  # the standard definition
-	print(slip);
-	print(strike_slip);
-	print(dip_slip);
-	sys.exit(0);
-	ux, uy, uz = okada_functions.gps_okada(strike, dip, rake, depth, L, W, alpha, strike_slip, dip_slip, gps_x, gps_y);
-	gps_disp_vector=np.concatenate(ux, uy, uz);
-	return gps_disp_vector;
+def gps_residual_plot(gps_x_vector, gps_pred_vector, gps_obs_vector, output_dir):
+	return;
 
 
-
-# THE MAJOR CALCULATION
+# THE MAJOR DRIVER FOR THE CALCULATION
 def do_geometry_computation(params, gps_inputs):
 	# Driver
 	if params.mode=="SIMPLE_TEST":
 		dummy_bayesian_computation();
 	if params.mode=="SPARSE":
-		gps_x, gps_y, gps_obs_vector = parse_gps_obs(params, gps_inputs);
-		sparse_okada_calculation(params, gps_x, gps_y, gps_obs_vector);
+		gps_x_vector, gps_obs_vector = parse_gps_obs(params, gps_inputs);
+		sparse_okada_calculation(params, gps_x_vector, gps_obs_vector);
 	if params.mode=="MEDIUM":
-		gps_x, gps_y, gps_obs_vector = parse_gps_obs(params, gps_inputs);
-		sparse_okada_calculation(params, gps_x, gps_y, gps_obs_vector);
+		gps_x_vector, gps_obs_vector = parse_gps_obs(params, gps_inputs);
+		sparse_okada_calculation(params, gps_x_vector, gps_obs_vector);
 	return;
 
 
-def sparse_okada_calculation(params, gps_x, gps_y, gps_obs_vector):
+def sparse_okada_calculation(params, x_vector, gps_obs_vector):
+	sigma = 0.005;  # data noise
+
+	# create our Op
+	logl = function_class.LogLike(function_class.my_loglike, gps_obs_vector, x_vector, sigma);
+
 
 	# The actual Bayesian inference for model parameters. 
 	with pm.Model() as model:
 		# Defining priors on the variables you want to estimate. 
 		myPriors=parse_priors(params);
 
-		# define likelihood
-		likelihood = pm.Normal('y', mu=calc_gps_disp_vector(myPriors.strike, myPriors.dip, 
-			myPriors.rake, myPriors.dz, 
-			myPriors.length, myPriors.width, params.alpha, 
-			params.mu, myPriors.Mag, myPriors.dx, myPriors.dy, gps_x, gps_y),
-		observed=gps_obs_vector);
-		
+		# Getting variables ready. 
+		# Constants are passed in separately. 
+		theta = tt.as_tensor_variable([myPriors.dip, myPriors.rake, myPriors.width]);
+
+		# use a DensityDist (use a lamdba function to "call" the Op)
+		# *** LOOKS LIKE IT'S NOT READING MY DATA. IT'S GIVING UNIFORM POSTERIOR. 
+		pm.DensityDist('likelihood', lambda v: logl(v), observed={'v': theta})
+
 		# Sample the distribution
 		trace=pm.sample(params.num_iter, tune=params.burn_in);
+
 		map_estimate = pm.find_MAP(model=model); # returns a dictionary
 
 
 	# OUTPUTS (THIS IS GENERAL TO ALL TYPES OF INVERSIONS)
-	MyOutputs = parse_posteriors(myPriors, map_estimate, trace);
-	modelparams = ["Mag","dx","dy","dz","length","width","strike","dip","rake"];
+	# TO DO THIS BETTER, MIGHT NEED DICTIONARIES OF DICTIONARIES
 	print("----- RESULTS ------");
-	for item in modelparams:
-		print_posterior_values(MyOutputs, item);
-	outputs_traces(trace, output_dir);
-	# NEXT: we will put the observation plot, model plots, and residual plot	
-	# predicted_gps = calc_gps_disp_vector();
-	# residual_plot(gps_x, gps_y, predicted_gps, gps_obs_vector);
+	MyOutputs = parse_posteriors(myPriors, map_estimate, trace);
+	outputs_traces(trace, params.output_dir);
+
+	# Residual vs observation plot
+	gps_pred_vector = function_class.calc_gps_disp_vector(
+		MyOutputs.strike, MyOutputs.dip, MyOutputs.rake, 
+		MyOutputs.dx, MyOutputs.dy, MyOutputs.dz, 
+		MyOutputs.Mag, MyOutputs.length, MyOutputs.width, 
+		30e9, 0.66667, x_vector);  #*** Eventually we'll have to get these parameters in here. 
+	ofile=open('output.txt','w');
+	for i in gps_pred_vector:
+		ofile.write("%.6f\n" % (i) );
+	ofile.close();
+	gps_residual_plot(x_vector, gps_pred_vector, gps_obs_vector, params.output_dir);
+
+	# NEXT: we will put the observation plot, model plots, and residual plot
+	# NEXT: It will have the fault plane on those figures (conversion math!)
+	# NEXT: We write the preferred values into a text file. 
 	return;
 
 
 def dummy_bayesian_computation():
 	# If the user would like a dummy calculation, we can do a simple y=f(x) model fitting. 
+	# NOTES:
+	# Metropolis is slow to converge
+	# Slice is fast
+	# NUTS is fast
 
 	# The example function we are giong to fit
 	def f(intercept, slope, exponent, x):
@@ -240,29 +244,35 @@ def dummy_bayesian_computation():
 		# Careful: you can try to estimate a data noise model, sigma
 		# But you really should know what you're doing. 
 		# This step changes the behavior of the system dramatically. 
-		# sigma = pm.Normal('sigma',mu=0.3, sigma=0.1, testval=1.0);  # a data noise model. Somehow it breaks if testval is too small. 
-		intercept=pm.Normal('Intercept', mu=0, sigma=20); # a wide-ranging uniform prior. 
-		slope = pm.Normal('Slope', mu=0, sigma=10); # another wide-ranging prior
-		exponent = pm.Normal('Exponent',mu=3, sigma=0.5); # another wide-ranging prior that doesnt work very well. 
+		# sigma = pm.Normal('sigma',mu=0.3, sigma=0.1, testval=1.0);  # a data noise model. 
+		# Somehow it breaks if testval is too small. 
+		# If you just put sigma=constant, you can change the behavior too. 
+		# If it matches the noise strength, then you get great convergence. 
+		
+		intercept=pm.Normal('intercept', mu=0, sigma=20); # a wide-ranging uniform prior. 
+		slope = pm.Normal('slope', mu=0, sigma=10); # another wide-ranging prior
+		exponent = pm.Normal('exponent',mu=3, sigma=0.5); # another wide-ranging prior that doesnt work very well. 
 		# Other possible priors:
 		# intercept=pm.Uniform('Intercept', -2, 3); # a wide-ranging uniform prior. 
 		# exponent = pm.Uniform('beta',1.85, 2.20); # another wide-ranging prior
 
 		# define likelihood
-		likelihood = pm.Normal('y', mu=f(intercept, slope, exponent, xdata), observed=ydata)
+		likelihood = pm.Normal('y', mu=f(intercept, slope, exponent, xdata), sigma=0.5, observed=ydata)
 		
 		# Sample the distribution
-		trace=pm.sample(4000, tune=500);
+		method=pm.Slice(vars=[intercept,slope,exponent]);  # slice sampling for all variables
+		trace=pm.sample(4000, tune=500, step=method);  # if you remove step=method, then you'll do NUTS
+
 		map_estimate = pm.find_MAP(model=model); # returns a dictionary
 
 
 	# Organize outputs
-	est_intercept=map_estimate['Intercept'];
-	est_exponent =map_estimate['Exponent'];
-	est_slope  =map_estimate['Slope'];
-	intercept_std = np.std(trace['Intercept']);
-	exponent_std = np.std(trace['Exponent']);
-	slope_std = np.std(trace['Slope']);
+	est_intercept=map_estimate['intercept'];
+	est_exponent =map_estimate['exponent'];
+	est_slope  =map_estimate['slope'];
+	intercept_std = np.std(trace['intercept']);
+	exponent_std = np.std(trace['exponent']);
+	slope_std = np.std(trace['slope']);
 	est_y = f(est_intercept, est_slope, est_exponent, xdata);
 	true_y = f(true_intercept, true_slope, true_exponent, xdata);
 
