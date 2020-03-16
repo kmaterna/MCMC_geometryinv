@@ -282,7 +282,7 @@ def dummy_bayesian_computation():
 	print("MAP Exponent: %.2f +/- %.2f" % (est_exponent, exponent_std) );
 	print("-----------");
 
-	outputs_traces(trace,'');
+	plotting.outputs_trace_plots(trace,'');
 
 	return; 
 

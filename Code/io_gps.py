@@ -11,6 +11,9 @@ def gps_input_manager(params):
 	# a vector of lon, lat (2*ngps x 1).
 	# a vector of x, y (2*ngps x 1).
 
+	if params.mode=="SIMPLE_TEST":
+		return [];
+
 	# Input of data
 	[gps_lon, gps_lat, ux, uy, uz] = read_gps_file(params.gps_input_file);
 
