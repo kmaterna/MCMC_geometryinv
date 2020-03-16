@@ -18,15 +18,6 @@ def get_slip_from_mw_area(Mw, L, W, mu):
 	slip=M0/(mu*area);
 	return slip;
 
-def get_plane_normal(strike, dip):
-	# Given a strike and dip, find the orthogonal unit vectors aligned with strike and dip directions that sit within the plane. 
-	# The plane normal is their cross product. 
-	# Returns in x, y, z coordinates. 
-	strike_vector=get_strike_vector(strike); # unit vector
-	dip_vector = get_dip_vector(strike, dip); # unit vector
-	plane_normal = np.cross(dip_vector, strike_vector);  # dip x strike for outward facing normal, by right hand rule. 
-	return plane_normal;
-
 def get_strike_vector(strike):
 	# Returns a unit vector in x-y-z coordinates 
 	theta=np.deg2rad(90-strike);
@@ -99,37 +90,6 @@ def get_rake(strike_slip, dip_slip):
 	rake = np.rad2deg(math.atan2(dip_slip,strike_slip));
 	return rake;
 
-def get_fault_center(fault_object, index):
-	# Compute the x-y-z coordinates of the center of a fault patch. 
-	# Index is the i'th fault patch in this fault_object
-	W = get_downdip_width(fault_object.top[index],fault_object.bottom[index],fault_object.dipangle[index]);
-	center_z = (fault_object.top[index]+fault_object.bottom[index])/2.0;
-	updip_center_x=(fault_object.xstart[index]+fault_object.xfinish[index])/2.0;
-	updip_center_y=(fault_object.ystart[index]+fault_object.yfinish[index])/2.0;
-	vector_mag = W*np.cos(np.deg2rad(fault_object.dipangle[index]))/2.0;  # how far the middle is displaced downdip from map-view
-	center_point = add_vector_to_point(updip_center_x,updip_center_y,vector_mag, fault_object.strike[index]+90);  # strike+90 = downdip direction. 
-	center = [center_point[0],center_point[1],center_z]; 
-	return center; 
-
-def get_fault_four_corners(fault_object, i):
-	# Get the four corners of the object, including updip and downdip. 
-	W = get_downdip_width(fault_object.top[i],fault_object.bottom[i],fault_object.dipangle[i]);
-	depth       = fault_object.top[i];
-	strike      = fault_object.strike[i];
-	dip         = fault_object.dipangle[i];
-
-	updip_point0 = [fault_object.xstart[i],fault_object.ystart[i]];
-	updip_point1 = [fault_object.xfinish[i],fault_object.yfinish[i]];
-	vector_mag = W*np.cos(np.deg2rad(fault_object.dipangle[i]));  # how far the bottom edge is displaced downdip from map-view
-	downdip_point0 = add_vector_to_point(fault_object.xstart[i],fault_object.ystart[i],vector_mag, strike+90);  # strike+90 = downdip direction. 
-	downdip_point1 = add_vector_to_point(fault_object.xfinish[i],fault_object.yfinish[i], vector_mag, strike+90);
-
-	x_total = [updip_point0[0], updip_point1[0], downdip_point1[0], downdip_point0[0],updip_point0[0]];
-	y_total = [updip_point0[1], updip_point1[1], downdip_point1[1], downdip_point0[1],updip_point0[1]];
-	x_updip = [updip_point0[0], updip_point1[0]];
-	y_updip = [updip_point0[1], updip_point1[1]];
-	return [x_total, y_total, x_updip, y_updip];
-
 def xy2lonlat(xi,yi,reflon,reflat):
 	lat=reflat+( yi*1/111.000 );
 	lon=reflon+( xi*1/(111.000*abs(np.cos(np.deg2rad(reflat)))) );
@@ -143,6 +103,3 @@ def latlon2xy(loni,lati,lon0,lat0):
 	x = radius * np.cos(np.deg2rad(azimuth));
 	y = radius * np.sin(np.deg2rad(azimuth));
 	return [x, y];
-
-
-

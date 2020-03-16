@@ -60,6 +60,7 @@ class LogLike(tt.Op):
 
 
 # PART 2: MECHANICAL FUNCTION FOR OKADA DISLOCATIONS
+# The inputs to these functions tend to be just floats and vectors. 
 
 # Function to compute elastic displacement vectors using the parameters estimated in the 
 # general solution to this 9-parameter geometry inversion. 

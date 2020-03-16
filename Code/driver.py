@@ -58,12 +58,13 @@ def read_config(config_file):
 	strike=configobj.get('compute-config','strike');
 	dip=configobj.get('compute-config','dip');
 	rake=configobj.get('compute-config','rake');
+	data_sigma=configobj.getfloat('compute-config','data_sigma');
 
 	Params = mcmc_collections.Params(gps_input_file=gps_input_file, num_iter=num_iter, 
 		burn_in=burn_in, step_size=step_size, mode=mode, mu=mu, alpha=alpha, 
 		lon0=lon0, lat0=lat0, Mag=Mag, style=style, dx=dx, dy=dy, dz=dz, length=length, 
-		width=width, strike=strike, dip=dip, rake=rake, output_dir=output_dir, 
-		model_file=model_file, pred_file=pred_file, title=title);
+		width=width, strike=strike, dip=dip, rake=rake, data_sigma=data_sigma, 
+		output_dir=output_dir, model_file=model_file, pred_file=pred_file, title=title);
 
 	num_params = 0;
 	paramdict = Params._asdict();

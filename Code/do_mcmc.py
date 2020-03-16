@@ -19,9 +19,7 @@ import plotting
 # We sample the posterior distribution many times using MCMC from pymc3
 
 # Next: 
-# 1. Show the slice of the modeled fault on plots
-# 2. Scale bar for horizontals and color bar for verticals
-# 3. Make a nice markdown with figures. 
+# 1. Make a nice markdown with figures. 
 # Code review everything
 # Fix the problem with matplotlib
 
@@ -135,11 +133,11 @@ def output_manager(params, myPriors, map_estimate, trace, GPSObject):
 	ofile.close();
 
 	# Residual vs observation
-	gps_pred_vector = function_class.calc_gps_disp_vector(
+	gps_pred_vector = okada_class.calc_gps_disp_vector(
 		Posteriors.strike, Posteriors.dip, Posteriors.rake, 
 		Posteriors.dx, Posteriors.dy, Posteriors.dz, 
 		Posteriors.Mag, Posteriors.length, Posteriors.width, 
-		30e9, 0.66667, GPSObject.gps_xy_vector);  #*** Eventually we'll have to get these parameters in here. 	
+		params.mu, params.alpha, GPSObject.gps_xy_vector); 
 
 	PredObject = mcmc_collections.GPS_disp_object(gps_ll_vector=GPSObject.gps_ll_vector, 
 		gps_xy_vector=GPSObject.gps_xy_vector, gps_obs_vector=gps_pred_vector);
@@ -161,7 +159,6 @@ def do_geometry_computation(params, GPSObject):
 
 
 def sparse_okada_calculation(params, GPSObject):
-	sigma = 0.001;  # data noise
 
 	# define your likelihood function that uses external codes
 	def sparse_loglike(theta, x, data, sigma):
@@ -173,6 +170,7 @@ def sparse_okada_calculation(params, GPSObject):
 		# In SPARSE mode, 3 varaibles are inverted for; the other 6 are held fixed. 
 		dip=theta[0]; rake=theta[1]; width=theta[2];
 
+		# These model parameters are specific for the SPARSE case. 
 		model = okada_class.calc_gps_disp_vector(float(params.strike), dip, rake, 
 			float(params.dx), float(params.dy), float(params.dz), float(params.Mag), 
 			float(params.length), width, params.mu, params.alpha, x);
@@ -182,7 +180,7 @@ def sparse_okada_calculation(params, GPSObject):
 
 	# create our Op using the loglike function we just defined. 
 	logl = okada_class.LogLike(sparse_loglike, GPSObject.gps_obs_vector, 
-		GPSObject.gps_xy_vector, sigma);
+		GPSObject.gps_xy_vector, params.data_sigma);
 
 
 	# The actual Bayesian inference for model parameters. 

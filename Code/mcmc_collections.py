@@ -14,6 +14,7 @@ Params = collections.namedtuple('Params',[
 	'dx','dy','dz',
 	'length','width',
 	'strike','dip','rake',
+	'data_sigma',
 	'output_dir',
 	'model_file','pred_file',
 	'title']);
