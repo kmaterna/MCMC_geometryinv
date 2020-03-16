@@ -34,3 +34,10 @@ Distributions_object = collections.namedtuple('Distributions_object',[
 	'strike','strike_fixed', 'strike_std',
 	'dip','dip_fixed', 'dip_std',
 	'rake','rake_fixed', 'rake_std']);
+
+Faults_object = collections.namedtuple('Faults_object',[
+	'xstart','xfinish',
+	'ystart','yfinish',
+	'rtlat','reverse',
+	'strike','dipangle','rake',
+	'top','bottom','comment']);

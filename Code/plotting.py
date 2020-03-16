@@ -26,13 +26,12 @@ def outputs_trace_plots(trace, output_dir):
 	return
 
 
-def gps_residual_plot(obsfile, predictedfile, modelfile):
-	# NEXT: we will put the observation plot, model plots, and residual plot
+def gps_residual_plot(obsfile, predfile, modelfile):
 	# NEXT: It will have the fault plane on those figures (conversion math!)
-	# NEXT: We write the preferred values into a text file.	
-	# We can run this separately. 
+	# NEXT: Scale bar for horizontals and color bar for verticals
+
 	[gps_lon, gps_lat, ux_obs, uy_obs, uz_obs]=io_gps.read_gps_file(obsfile);
-	[gps_lon, gps_lat, ux_pred, uy_pred, uz_pred]=io_gps.read_gps_file(predictedfile);
+	[gps_lon, gps_lat, ux_pred, uy_pred, uz_pred]=io_gps.read_gps_file(predfile);
 	ux_res = np.subtract(ux_obs, ux_pred);
 	uy_res = np.subtract(uy_obs, uy_pred);
 	uz_res = np.subtract(uz_obs, uz_pred);
@@ -41,9 +40,11 @@ def gps_residual_plot(obsfile, predictedfile, modelfile):
 	# Involving the results file
 
 
+	vmin=-0.006;
+	vmax=0.006;
 
 	fig,axarr = plt.subplots(1,3,sharey=True, figsize=(20, 8), dpi=300);
-	axarr[0].scatter(gps_lon, gps_lat, marker='o', s=150, c=uz_obs, vmin=-0.015, vmax=0.015);
+	axarr[0].scatter(gps_lon, gps_lat, marker='o', s=150, c=uz_obs, vmin=vmin, vmax=vmax);
 	axarr[0].quiver(gps_lon,gps_lat,ux_obs,uy_obs,linewidths=0.01, edgecolors=('k'),scale=0.05);
 	axarr[0].set_xlim([np.min(gps_lon),np.max(gps_lon)])
 	axarr[0].set_ylim([np.min(gps_lat),np.max(gps_lat)])
@@ -51,7 +52,7 @@ def gps_residual_plot(obsfile, predictedfile, modelfile):
 	axarr[0].grid(True)
 	axarr[0].set_title('Observed');
 
-	axarr[1].scatter(gps_lon, gps_lat, marker='o', s=150, c=uz_pred, vmin=-0.015, vmax=0.015);
+	axarr[1].scatter(gps_lon, gps_lat, marker='o', s=150, c=uz_pred, vmin=vmin, vmax=vmax);
 	axarr[1].quiver(gps_lon,gps_lat,ux_pred,uy_pred,linewidths=0.01, edgecolors=('k'),scale=0.05);
 	axarr[1].set_xlim([np.min(gps_lon),np.max(gps_lon)])
 	axarr[1].set_ylim([np.min(gps_lat),np.max(gps_lat)])
@@ -59,7 +60,7 @@ def gps_residual_plot(obsfile, predictedfile, modelfile):
 	axarr[1].grid(True)
 	axarr[1].set_title('Modeled');
 
-	axarr[2].scatter(gps_lon, gps_lat, marker='o', s=150, c=uz_res, vmin=-0.015, vmax=0.015);
+	axarr[2].scatter(gps_lon, gps_lat, marker='o', s=150, c=uz_res, vmin=vmin, vmax=vmax);
 	axarr[2].quiver(gps_lon,gps_lat,ux_res,uy_res,linewidths=0.01, edgecolors=('k'),scale=0.05);
 	axarr[2].set_xlim([np.min(gps_lon),np.max(gps_lon)])
 	axarr[2].set_ylim([np.min(gps_lat),np.max(gps_lat)])
@@ -75,4 +76,8 @@ def gps_residual_plot(obsfile, predictedfile, modelfile):
 
 
 if __name__=="__main__":
-	gps_residual_plot(params.gps_inputfile, params.pred_file);
+	obsfile = "example_gps_6.5_325.txt";
+	predfile= "gps_predicted_model.txt";
+	modelfile="model_results.txt";
+	gps_residual_plot(obsfile, predfile, modelfile);
+

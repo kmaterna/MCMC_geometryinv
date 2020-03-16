@@ -1,27 +1,33 @@
 # The purpose of this script is to create GPS data
 # That we can invert. 
-# The geometry parameters are known. 
+# The geometry parameters are given. 
 
 import numpy as np
 import matplotlib
 matplotlib.use('PS')  # forces a certain backend behavior of matplotlib on macosx for pymc3
 import matplotlib.pyplot as plt 
 import random
-import okada_functions
+import okada_class
 import io_gps
 import conversion_math
 
 
 def make_data_dc3d():
 
-	# Quantities that we select. 
-	# [strike, dip, rake] = [343, 44, -62];
-	[strike, dip, rake] = [325, 80, 179];
+	# USER SELECTED PARAMETER
+	[strike, dip, rake] = [325, 80, 160];  # [strike, dip, rake] = [343, 44, -62];
 	[L, W, depth] = [23, 14, 15]; # comes from Wells and Coppersmith, normal fault, M6.5.
 	[lon0, lat0] = [-121.0, 34.5]; # the top back corner of the fault plane, the natural reference point of the system. 
 	Mw=6.5;  # magnitude of event
 	mu=30e9; # 30 GPa for shear modulus
 	alpha=0.66667 # usually don't touch this. 
+	gps_xrange=[-123, -119];
+	gps_yrange=[32.5, 36.0];
+	number_gps_points = 100; 
+	outname='example_gps_'+str(Mw)+'_'+str(strike)+'.txt';
+
+
+
 
 	# Derived quantities
 	slip = conversion_math.get_slip_from_mw_area(Mw, L, W, mu);
@@ -29,10 +35,6 @@ def make_data_dc3d():
 	print("strike slip:",strike_slip,"m (positive is left-lateral)");
 	print("dip slip:",dip_slip,"m (positive is reverse)");
 
-	# How to make GPS displacements
-	gps_xrange=[-123, -119];
-	gps_yrange=[32.5, 36.0];
-	number_gps_points = 100; 
 
 	gps_lon=[]; gps_lat=[];
 	for i in range(number_gps_points):
@@ -60,7 +62,7 @@ def make_data_dc3d():
 	print("Alpha = ",alpha)
 	print("Strikeslip = ", strike_slip)
 	print("Dip slip = ",dip_slip)
-	ux, uy, uz = okada_functions.gps_okada(strike, dip, rake, depth, L, W, alpha, strike_slip, dip_slip, gps_x, gps_y);
+	ux, uy, uz = okada_class.okada_at_origin(strike, dip, rake, depth, L, W, alpha, strike_slip, dip_slip, gps_x, gps_y);
 
 	# Add some random noise
 	ux = np.add(ux, 0.001*np.random.randn(len(ux)));
@@ -78,7 +80,6 @@ def make_data_dc3d():
 	plt.plot(lon0, lat0, '.r',marker='o');
 	plt.savefig("Displacement_model_"+str(Mw)+'_'+str(strike)+".png");
 	
-	outname='example_gps_'+str(Mw)+'_'+str(strike)+'.txt';
 	io_gps.write_gps_file(gps_lon, gps_lat, ux, uy, uz, outname);
 	return;
 

@@ -11,9 +11,10 @@ def gps_input_manager(params):
 	# a vector of lon, lat (2*ngps x 1).
 	# a vector of x, y (2*ngps x 1).
 
+	# Input of data
 	[gps_lon, gps_lat, ux, uy, uz] = read_gps_file(params.gps_input_file);
 
-	# Doing the geographic conversion and wrapping up the inputs
+	# Doing the geographic conversion and wrapping into an object
 	gps_x=[]; gps_y=[];
 	for i in range(len(gps_lon)):
 		kx, ky = conversion_math.latlon2xy(gps_lon[i], gps_lat[i], params.lon0, params.lat0);

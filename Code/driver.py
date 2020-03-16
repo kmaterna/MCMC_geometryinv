@@ -11,7 +11,6 @@ def do_calculation():
 	params = read_config(args.config);
 	gps_inputs = io_gps.gps_input_manager(params);
 	do_mcmc.do_geometry_computation(params, gps_inputs);
-	# output_manager.produce_outputs(params, inputs, disp_points, out_object);
 	return;
 
 def welcome_and_parse():

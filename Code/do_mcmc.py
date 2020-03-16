@@ -8,31 +8,21 @@ import pymc3 as pm
 import matplotlib.pyplot as plt 
 import theano.tensor as tt
 import mcmc_collections
-import okada_functions
+import okada_class
 import conversion_math
-import function_class
 import io_gps
 import plotting
 
 # High level bit: 
 # Here we will build a sampling system
 # We construct priors and initial vector of parameters from the config file. 
-# We might construct a step-size vector. 
 # We sample the posterior distribution many times using MCMC from pymc3
 
-# Notes: 
-# The priors are VERY important. I get much better fits to data with uniform priors, obviously
-# The definition of SIGMA on your model is VERY important too. 
-# You should know what you're doing before playing with that. 
-# I can get "well-converging" BAD model that doesn't match a prior, and doesn't match the data either. 
-# It's not reproducible and sometimes depends on sample number, sometimes shows errors, sometimes not. 
-# If I don't put sigma into the model at all, it fits the data much better. 
-
 # Next: 
-# How to pass constants into my classes? 
+# 1. Show the slice of the modeled fault on plots
+# 2. Scale bar for horizontals and color bar for verticals
+# 3. Make a nice markdown with figures. 
 # Code review everything
-# Show the slice of the modeled fault on plots
-# Make a nice markdown
 # Fix the problem with matplotlib
 
 
@@ -137,7 +127,7 @@ def output_manager(params, myPriors, map_estimate, trace, GPSObject):
 	Posteriors = parse_posteriors(myPriors, map_estimate, trace, params.model_file);
 	plotting.outputs_trace_plots(trace, params.output_dir);
 
-	# Write out all params into the result file too. 
+	# Write out all config params into the result file too. 
 	ofile=open(params.model_file,'a');
 	ofile.write("\n\n#------ CONFIG ------- # \n");
 	for fld in params._fields:
@@ -150,12 +140,6 @@ def output_manager(params, myPriors, map_estimate, trace, GPSObject):
 		Posteriors.dx, Posteriors.dy, Posteriors.dz, 
 		Posteriors.Mag, Posteriors.length, Posteriors.width, 
 		30e9, 0.66667, GPSObject.gps_xy_vector);  #*** Eventually we'll have to get these parameters in here. 	
-
-	# gps_pred_vector = function_class.calc_gps_disp_vector(
-	# 	Posteriors.strike, 80, 179, 
-	# 	Posteriors.dx, Posteriors.dy, Posteriors.dz, 
-	# 	Posteriors.Mag, Posteriors.length, 14, 
-	# 	30e9, 0.66667, GPSObject.gps_xy_vector);  #*** Eventually we'll have to get these parameters in here. 	
 
 	PredObject = mcmc_collections.GPS_disp_object(gps_ll_vector=GPSObject.gps_ll_vector, 
 		gps_xy_vector=GPSObject.gps_xy_vector, gps_obs_vector=gps_pred_vector);
@@ -179,16 +163,34 @@ def do_geometry_computation(params, GPSObject):
 def sparse_okada_calculation(params, GPSObject):
 	sigma = 0.001;  # data noise
 
-	# create our Op
-	logl = function_class.LogLike(function_class.my_loglike, GPSObject.gps_obs_vector, 
+	# define your likelihood function that uses external codes
+	def sparse_loglike(theta, x, data, sigma):
+		"""
+		A Gaussian log-likelihood function for a model with parameters theta. 
+		Some of these parameters might be floats, if given in the config file. 
+		Some might be tt.dvectors, if specified as distributions in the config file. 
+		"""
+		# In SPARSE mode, 3 varaibles are inverted for; the other 6 are held fixed. 
+		dip=theta[0]; rake=theta[1]; width=theta[2];
+
+		model = okada_class.calc_gps_disp_vector(float(params.strike), dip, rake, 
+			float(params.dx), float(params.dy), float(params.dz), float(params.Mag), 
+			float(params.length), width, params.mu, params.alpha, x);
+
+		return -(0.5/sigma**2)*np.sum((data - model)**2)
+
+
+	# create our Op using the loglike function we just defined. 
+	logl = okada_class.LogLike(sparse_loglike, GPSObject.gps_obs_vector, 
 		GPSObject.gps_xy_vector, sigma);
+
 
 	# The actual Bayesian inference for model parameters. 
 	with pm.Model() as model:
 
 		myPriors = parse_priors(params);
 
-		# Getting variables ready. Constants are passed in separately. 
+		# Getting variables ready. Constants are defined in sparse_loglike. 
 		theta = tt.as_tensor_variable([myPriors.dip, myPriors.rake, myPriors.width]);
 
 		# use a DensityDist (use a lamdba function to "call" the Op)
@@ -197,7 +199,8 @@ def sparse_okada_calculation(params, GPSObject):
 		# Sample the distribution
 		trace=pm.sample(params.num_iter, tune=params.burn_in);
 
-		map_estimate = pm.find_MAP(model=model); # returns a dictionary
+		map_estimate = pm.find_MAP(model=model); # returns a dictionary. 
+		# I have found the MAP estimate is not so useful in real cases. 
 
 	return myPriors, map_estimate, trace;
 
