@@ -1,0 +1,37 @@
+# ------- RESULTS: ------- #
+FIX Mag: 6.50
+FIX dx: 0.00
+FIX dy: 0.00
+FIX dz: 15.00
+FIX length: 23.00
+EST width: 13.76 +/- 0.47
+FIX strike: 325.00
+EST dip: 83.11 +/- 1.76
+EST rake: 158.74 +/- 1.48
+
+
+#------ CONFIG ------- # 
+gps_input_file: example_gps_6.5_325.txt
+num_iter: 2500
+burn_in: 500
+step_size: 0.5
+mode: SPARSE
+mu: 30000000000.0
+alpha: 0.66667
+lon0: -121.0
+lat0: 34.5
+Mag: 6.5
+style: None
+dx: 0
+dy: 0
+dz: 15
+length: 23
+width: uniform(0,30)
+strike: 325
+dip: uniform(45,90)
+rake: uniform(90,180)
+data_sigma: 0.001
+output_dir: Outdir
+model_file: model_results.txt
+pred_file: gps_predicted_model.txt
+title: Strike Slip Experiment
