@@ -21,6 +21,8 @@ This code performs a nonlinear inversion for geometry parameters (strike, dip, r
     * strike = uniform(0,90)
     * strike = normal(45,20)
 * In all cases, the slip will be computed from the magnitude using a Wells and Coppersmith (1994) relationship. In some cases, the Length and Width will also be computed in the same way. If you care which relationship is used, you can set the "style" to be ss, reverse, normal, or None. 
+* Supports normal and uniform distributions as priors right now
+* Your center point should be your best guess for the top back corner of the fault plane. 
 
 ### Future work: ###
 * Other features. 

@@ -47,12 +47,12 @@ def my_loglike(theta, x, data, sigma):
 	fault_x=0; 
 	fault_y=0;
 	depth=15;
-	Mw=6.5;
+	Mag=6.5;
 	L=23;
 	mu=30e9;
 	alpha=0.66667;
 
-	model = calc_gps_disp_vector(strike, dip, rake, fault_x, fault_y, depth, Mw, L, W, mu, alpha, x);
+	model = calc_gps_disp_vector(strike, dip, rake, fault_x, fault_y, depth, Mag, L, W, mu, alpha, x);
 
 	return -(0.5/sigma**2)*np.sum((data - model)**2)
 

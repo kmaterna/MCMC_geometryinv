@@ -9,7 +9,7 @@ import do_mcmc
 def do_calculation():
 	args = welcome_and_parse();
 	params = read_config(args.config);
-	gps_inputs = io_gps.read_gps_file(params.gps_input_file);
+	gps_inputs = io_gps.gps_input_manager(params);
 	do_mcmc.do_geometry_computation(params, gps_inputs);
 	# output_manager.produce_outputs(params, inputs, disp_points, out_object);
 	return;
@@ -33,6 +33,8 @@ def read_config(config_file):
 	# Basic parameters
 	gps_input_file=configobj.get('io-config','gps_input_file');
 	output_dir=configobj.get('io-config','output_dir');
+	model_file=configobj.get('io-config','model_file');
+	pred_file=configobj.get('io-config','pred_file');
 	title=configobj.get('io-config','title');
 	num_iter=configobj.getint('mcmc-config','num_iter');
 	burn_in=configobj.getint('mcmc-config','burn_in');
@@ -61,7 +63,8 @@ def read_config(config_file):
 	Params = mcmc_collections.Params(gps_input_file=gps_input_file, num_iter=num_iter, 
 		burn_in=burn_in, step_size=step_size, mode=mode, mu=mu, alpha=alpha, 
 		lon0=lon0, lat0=lat0, Mag=Mag, style=style, dx=dx, dy=dy, dz=dz, length=length, 
-		width=width, strike=strike, dip=dip, rake=rake, output_dir=output_dir, title=title);
+		width=width, strike=strike, dip=dip, rake=rake, output_dir=output_dir, 
+		model_file=model_file, pred_file=pred_file, title=title);
 
 	num_params = 0;
 	paramdict = Params._asdict();

@@ -14,12 +14,14 @@ Params = collections.namedtuple('Params',[
 	'dx','dy','dz',
 	'length','width',
 	'strike','dip','rake',
-	'output_dir','title']);
+	'output_dir',
+	'model_file','pred_file',
+	'title']);
 
 GPS_disp_object = collections.namedtuple('GPS_obj',[
-	'gps_lon','gps_lat',
-	'gps_x','gps_y',
-	'ux','uy','uz']);
+	'gps_ll_vector',
+	'gps_xy_vector',
+	'gps_obs_vector']);
 
 # Intended for holding either the prior or posterior states of the variables. 
 Distributions_object = collections.namedtuple('Distributions_object',[

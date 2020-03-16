@@ -4,17 +4,18 @@ import numpy as np
 import sys
 import matplotlib
 matplotlib.use('PS')  # forces a certain backend behavior of matplotlib on macosx for pymc3
-import pymc3 as pm 
-import theano.tensor as tt
+import pymc3 as pm
 import matplotlib.pyplot as plt 
+import theano.tensor as tt
 import mcmc_collections
 import okada_functions
 import conversion_math
 import function_class
+import io_gps
+import plotting
 
 # High level bit: 
 # Here we will build a sampling system
-# First we convert gps_inputs into the reference frame of the system
 # We construct priors and initial vector of parameters from the config file. 
 # We might construct a step-size vector. 
 # We sample the posterior distribution many times using MCMC from pymc3
@@ -29,26 +30,13 @@ import function_class
 
 # Next: 
 # How to pass constants into my classes? 
-# Code review everything. 
-# Step size? 
-# Output data, model, and residual plots
+# Code review everything
 # Show the slice of the modeled fault on plots
-# Make a nice markdown. 
+# Make a nice markdown
+# Fix the problem with matplotlib
 
 
 # UTILITY FUNCTIONS
-
-def parse_gps_obs(params, gps_inputs):
-	# The math to do  coordinate transformation and data setup
-	# Returns a vector of ux, uy, uz (3*ngps x 1). 
-	gps_x=[]; gps_y=[];
-	for i in range(len(gps_inputs.gps_lon)):
-		kx, ky = conversion_math.latlon2xy(gps_inputs.gps_lon[i], gps_inputs.gps_lat[i], params.lon0, params.lat0);
-		gps_x.append(kx);
-		gps_y.append(ky);
-	gps_obs_vector = np.concatenate((gps_inputs.ux, gps_inputs.uy, gps_inputs.uz));
-	gps_x_vector   = np.concatenate((gps_x, gps_y));
-	return gps_x_vector, gps_obs_vector;
 
 def parse_priors(params):
 	Mag, Mag_fixed       = parse_prior(params.Mag, 'Mag');
@@ -101,27 +89,35 @@ def parse_prior(variable, name):
 		fixed_flag=True;
 	return value, fixed_flag;
 
-def parse_posterior(name, prior_value, prior_fixed, map_estimate, trace):
+def parse_posterior(name, prior_value, prior_fixed, map_estimate, trace, outfile):
+	ofile=open(outfile,'a');
 	if prior_fixed==True:
 		est = prior_value;
 		std = 0;
+		ofile.write("FIX "+name+": %.2f\n" % (est) );
 	else:
-		est = map_estimate[name];
+		# est = map_estimate[name];  # Thinking this might not work for discrete data anymore... 
+		est = np.mean(trace[name]);  # For discrete data
 		std = np.std(trace[name]);
 		print("MAP "+name+": %.2f +/- %.2f" % (est, std) );
 		print("-----------");
+		ofile.write("EST "+name+": %.2f +/- %.2f\n" % (est, std) );
+	ofile.close();
 	return est, std;
 
-def parse_posteriors(myPriors, map_estimate, trace):
-	Mag, Mag_std       = parse_posterior('Mag',myPriors.Mag, myPriors.Mag_fixed, map_estimate, trace);
-	dx, dx_std         = parse_posterior('dx',myPriors.dx, myPriors.dx_fixed, map_estimate, trace);
-	dy, dy_std         = parse_posterior('dy',myPriors.dy, myPriors.dy_fixed, map_estimate, trace);
-	dz, dz_std         = parse_posterior('dz',myPriors.dz, myPriors.dz_fixed, map_estimate, trace);
-	length, length_std = parse_posterior('length',myPriors.length, myPriors.length_fixed, map_estimate, trace);
-	width, width_std   = parse_posterior('width',myPriors.width, myPriors.width_fixed, map_estimate, trace);	
-	strike, strike_std = parse_posterior('strike',myPriors.strike, myPriors.strike_fixed, map_estimate, trace);
-	dip, dip_std       = parse_posterior('dip',myPriors.dip, myPriors.dip_fixed, map_estimate, trace);
-	rake, rake_std     = parse_posterior('rake',myPriors.rake, myPriors.rake_fixed, map_estimate, trace);	
+def parse_posteriors(myPriors, map_estimate, trace, outfile):
+	ofile=open(outfile,'w');
+	ofile.write("# ------- RESULTS: ------- #\n");
+	ofile.close();
+	Mag, Mag_std       = parse_posterior('Mag',myPriors.Mag, myPriors.Mag_fixed, map_estimate, trace, outfile);
+	dx, dx_std         = parse_posterior('dx',myPriors.dx, myPriors.dx_fixed, map_estimate, trace, outfile);
+	dy, dy_std         = parse_posterior('dy',myPriors.dy, myPriors.dy_fixed, map_estimate, trace, outfile);
+	dz, dz_std         = parse_posterior('dz',myPriors.dz, myPriors.dz_fixed, map_estimate, trace, outfile);
+	length, length_std = parse_posterior('length',myPriors.length, myPriors.length_fixed, map_estimate, trace, outfile);
+	width, width_std   = parse_posterior('width',myPriors.width, myPriors.width_fixed, map_estimate, trace, outfile);
+	strike, strike_std = parse_posterior('strike',myPriors.strike, myPriors.strike_fixed, map_estimate, trace, outfile);
+	dip, dip_std       = parse_posterior('dip',myPriors.dip, myPriors.dip_fixed, map_estimate, trace, outfile);
+	rake, rake_std     = parse_posterior('rake',myPriors.rake, myPriors.rake_fixed, map_estimate, trace, outfile);
 
 	Posterior = mcmc_collections.Distributions_object(
 		Mag=Mag, Mag_fixed=myPriors.Mag_fixed, Mag_std=Mag_std,
@@ -135,58 +131,67 @@ def parse_posteriors(myPriors, map_estimate, trace):
 		rake=rake, rake_fixed=myPriors.rake_fixed, rake_std=rake_std);
 	return Posterior; 
 
-def outputs_traces(trace, output_dir):
-	# The trace plots
-	fig = plt.figure();
-	ax = fig.add_subplot(111);
-	pm.traceplot(trace);
-	plt.savefig('posterior.png');
-	plt.close();
+def output_manager(params, myPriors, map_estimate, trace, GPSObject):
+	# OUTPUTS (THIS IS GENERAL TO ALL TYPES OF INVERSIONS)
+	print("----- RESULTS ------");
+	Posteriors = parse_posteriors(myPriors, map_estimate, trace, params.model_file);
+	plotting.outputs_trace_plots(trace, params.output_dir);
 
-	# The corner plot
-	fig = plt.figure();
-	ax = fig.add_subplot(111);
-	pm.pairplot(trace);
-	plt.savefig('corner_plot.png');
-	plt.close();
-	return
+	# Write out all params into the result file too. 
+	ofile=open(params.model_file,'a');
+	ofile.write("\n\n#------ CONFIG ------- # \n");
+	for fld in params._fields:
+		ofile.write("%s: %s\n" % (fld, str(getattr(params,fld))) );
+	ofile.close();
 
-def gps_residual_plot(gps_x_vector, gps_pred_vector, gps_obs_vector, output_dir):
+	# Residual vs observation
+	gps_pred_vector = function_class.calc_gps_disp_vector(
+		Posteriors.strike, Posteriors.dip, Posteriors.rake, 
+		Posteriors.dx, Posteriors.dy, Posteriors.dz, 
+		Posteriors.Mag, Posteriors.length, Posteriors.width, 
+		30e9, 0.66667, GPSObject.gps_xy_vector);  #*** Eventually we'll have to get these parameters in here. 	
+
+	# gps_pred_vector = function_class.calc_gps_disp_vector(
+	# 	Posteriors.strike, 80, 179, 
+	# 	Posteriors.dx, Posteriors.dy, Posteriors.dz, 
+	# 	Posteriors.Mag, Posteriors.length, 14, 
+	# 	30e9, 0.66667, GPSObject.gps_xy_vector);  #*** Eventually we'll have to get these parameters in here. 	
+
+	PredObject = mcmc_collections.GPS_disp_object(gps_ll_vector=GPSObject.gps_ll_vector, 
+		gps_xy_vector=GPSObject.gps_xy_vector, gps_obs_vector=gps_pred_vector);
+	io_gps.gps_output_manager(PredObject, params.pred_file);
+	plotting.gps_residual_plot(params.gps_input_file, params.pred_file, params.model_file);
+
 	return;
+
 
 
 # THE MAJOR DRIVER FOR THE CALCULATION
-def do_geometry_computation(params, gps_inputs):
-	# Driver
+def do_geometry_computation(params, GPSObject):
 	if params.mode=="SIMPLE_TEST":
 		dummy_bayesian_computation();
 	if params.mode=="SPARSE":
-		gps_x_vector, gps_obs_vector = parse_gps_obs(params, gps_inputs);
-		sparse_okada_calculation(params, gps_x_vector, gps_obs_vector);
-	if params.mode=="MEDIUM":
-		gps_x_vector, gps_obs_vector = parse_gps_obs(params, gps_inputs);
-		sparse_okada_calculation(params, gps_x_vector, gps_obs_vector);
+		myPriors, map_estimate, trace = sparse_okada_calculation(params, GPSObject);
+		output_manager(params, myPriors, map_estimate, trace, GPSObject);
 	return;
 
 
-def sparse_okada_calculation(params, x_vector, gps_obs_vector):
-	sigma = 0.005;  # data noise
+def sparse_okada_calculation(params, GPSObject):
+	sigma = 0.001;  # data noise
 
 	# create our Op
-	logl = function_class.LogLike(function_class.my_loglike, gps_obs_vector, x_vector, sigma);
-
+	logl = function_class.LogLike(function_class.my_loglike, GPSObject.gps_obs_vector, 
+		GPSObject.gps_xy_vector, sigma);
 
 	# The actual Bayesian inference for model parameters. 
 	with pm.Model() as model:
-		# Defining priors on the variables you want to estimate. 
-		myPriors=parse_priors(params);
 
-		# Getting variables ready. 
-		# Constants are passed in separately. 
+		myPriors = parse_priors(params);
+
+		# Getting variables ready. Constants are passed in separately. 
 		theta = tt.as_tensor_variable([myPriors.dip, myPriors.rake, myPriors.width]);
 
 		# use a DensityDist (use a lamdba function to "call" the Op)
-		# *** LOOKS LIKE IT'S NOT READING MY DATA. IT'S GIVING UNIFORM POSTERIOR. 
 		pm.DensityDist('likelihood', lambda v: logl(v), observed={'v': theta})
 
 		# Sample the distribution
@@ -194,29 +199,7 @@ def sparse_okada_calculation(params, x_vector, gps_obs_vector):
 
 		map_estimate = pm.find_MAP(model=model); # returns a dictionary
 
-
-	# OUTPUTS (THIS IS GENERAL TO ALL TYPES OF INVERSIONS)
-	# TO DO THIS BETTER, MIGHT NEED DICTIONARIES OF DICTIONARIES
-	print("----- RESULTS ------");
-	MyOutputs = parse_posteriors(myPriors, map_estimate, trace);
-	outputs_traces(trace, params.output_dir);
-
-	# Residual vs observation plot
-	gps_pred_vector = function_class.calc_gps_disp_vector(
-		MyOutputs.strike, MyOutputs.dip, MyOutputs.rake, 
-		MyOutputs.dx, MyOutputs.dy, MyOutputs.dz, 
-		MyOutputs.Mag, MyOutputs.length, MyOutputs.width, 
-		30e9, 0.66667, x_vector);  #*** Eventually we'll have to get these parameters in here. 
-	ofile=open('output.txt','w');
-	for i in gps_pred_vector:
-		ofile.write("%.6f\n" % (i) );
-	ofile.close();
-	gps_residual_plot(x_vector, gps_pred_vector, gps_obs_vector, params.output_dir);
-
-	# NEXT: we will put the observation plot, model plots, and residual plot
-	# NEXT: It will have the fault plane on those figures (conversion math!)
-	# NEXT: We write the preferred values into a text file. 
-	return;
+	return myPriors, map_estimate, trace;
 
 
 def dummy_bayesian_computation():

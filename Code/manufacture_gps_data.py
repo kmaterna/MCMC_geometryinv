@@ -16,13 +16,12 @@ def make_data_dc3d():
 
 	# Quantities that we select. 
 	# [strike, dip, rake] = [343, 44, -62];
-	[strike, dip, rake] = [325, 80, -180];
+	[strike, dip, rake] = [325, 80, 179];
 	[L, W, depth] = [23, 14, 15]; # comes from Wells and Coppersmith, normal fault, M6.5.
-	[lon0, lat0] = [-121.0, 34.6]; # the top back corner of the fault plane
-	# and the natural reference point of the system. 
+	[lon0, lat0] = [-121.0, 34.5]; # the top back corner of the fault plane, the natural reference point of the system. 
 	Mw=6.5;  # magnitude of event
 	mu=30e9; # 30 GPa for shear modulus
-	alpha=2./3 # usually don't touch this. 
+	alpha=0.66667 # usually don't touch this. 
 
 	# Derived quantities
 	slip = conversion_math.get_slip_from_mw_area(Mw, L, W, mu);
@@ -52,6 +51,15 @@ def make_data_dc3d():
 	# Given strike, dip, rake, depth, alpha, strike_slip, and dip_slip...
 	# Given vectors of gps_x and gps_y...
 	# Returns vectors of gps_u, gps_v, and gps_w.
+	print("Strike = ",strike)
+	print("Dip = ",dip)
+	print("Rake = ",rake)
+	print("Depth = ",depth)
+	print("Length = ",L)
+	print("Width = ",W)
+	print("Alpha = ",alpha)
+	print("Strikeslip = ", strike_slip)
+	print("Dip slip = ",dip_slip)
 	ux, uy, uz = okada_functions.gps_okada(strike, dip, rake, depth, L, W, alpha, strike_slip, dip_slip, gps_x, gps_y);
 
 	# Add some random noise
@@ -70,7 +78,7 @@ def make_data_dc3d():
 	plt.plot(lon0, lat0, '.r',marker='o');
 	plt.savefig("Displacement_model_"+str(Mw)+'_'+str(strike)+".png");
 	
-	outname='output_'+str(Mw)+'_'+str(strike)+'.txt';
+	outname='example_gps_'+str(Mw)+'_'+str(strike)+'.txt';
 	io_gps.write_gps_file(gps_lon, gps_lat, ux, uy, uz, outname);
 	return;
 
