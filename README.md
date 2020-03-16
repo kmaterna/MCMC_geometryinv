@@ -84,3 +84,27 @@ The tradeoff plots show that all three parameters have strong tradeoffs with one
 
 ### Example 2: Geometry Inversion with GPS ###
 
+In this example, I produced displacements at 100 randomly located GPS stations around a hypothetical right-lateral M6.5 earthquake. I am only solving for width, rake, and dip (SPARSE MODE). I am assuming that strike, depth, dx, dy, dz, and Magnitude are well-constrained and held fixed. 
+
+The "true" parameters are:
+* width = 14.0 km
+* dip = 80.0 degrees
+* rake = 160.0 degrees
+
+My choices of priors, model domain, numerical parameters, and data noise are specified in the configuration file. 
+
+In this case, after running for a minute or two, the inversion produces a model that fits the data reasonably well: 
+EST width: 13.76 +/- 0.47
+EST dip: 83.11 +/- 1.76
+EST rake: 158.74 +/- 1.48
+
+![Parameter_Convergence](https://github.com/kmaterna/MCMC_geometryinv/blob/master/Examples/gps_inversion/posterior.png)
+
+![Data_and_Model_Fit](https://github.com/kmaterna/MCMC_geometryinv/blob/master/Examples/gps_inversion/residuals.png)
+
+![Tradeoffs](https://github.com/kmaterna/MCMC_geometryinv/blob/master/Examples/gps_inversion/corner_plot.png)
+
+This is a starting-off point for more involved research questions using a Bayesian framework. 
+
+
+
