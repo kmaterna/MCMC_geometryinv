@@ -11,7 +11,6 @@ import mcmc_collections
 import conversion_math
 import okada_class
 import io_gps
-import plotting
 
 
 # UTILITY AND OUTPUT FUNCTIONS
@@ -40,7 +39,7 @@ def parse_posteriors(params, trace):
 	dx, dx_std         = parse_posterior('dx',params.dx, trace, outfile);
 	dy, dy_std         = parse_posterior('dy',params.dy, trace, outfile);
 	dz, dz_std         = parse_posterior('dz',params.dz, trace, outfile);
-	length, length_std = parse_posterior('length',params.dz, trace, outfile);
+	length, length_std = parse_posterior('length',params.length, trace, outfile);
 	width, width_std   = parse_posterior('width',params.width, trace, outfile);
 	strike, strike_std = parse_posterior('strike',params.strike, trace, outfile);
 	dip, dip_std       = parse_posterior('dip',params.dip, trace, outfile);
@@ -196,7 +195,7 @@ def gps_residual_plot(obsfile, predfile, modelfile):
 def output_manager(params, trace, GPSObject):
 	# OUTPUTS (THIS IS GENERAL TO ALL TYPES OF INVERSIONS)
 	print("----- RESULTS ------");
-	Posteriors = parse_posteriors(params, trace,);
+	Posteriors = parse_posteriors(params, trace);
 	outputs_trace_plots(trace, params.output_dir);  # This takes a little while
 
 	# Write out all config params into the result file too. 

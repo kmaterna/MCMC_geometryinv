@@ -1,13 +1,13 @@
 # ------- RESULTS: ------- #
-FIX Mag: 6.50
-FIX dx: 0.00
-FIX dy: 0.00
-FIX dz: 15.00
-FIX length: 23.00
-EST width: 13.76 +/- 0.47
-FIX strike: 325.00
-EST dip: 83.11 +/- 1.76
-EST rake: 158.74 +/- 1.48
+ Mag: 6.50
+ dx: 0.00
+ dy: 0.00
+ dz: 15.00
+ length: 23.00
+ width: 13.76 +/- 0.46
+ strike: 325.00
+ dip: 83.08 +/- 1.69
+ rake: 158.75 +/- 1.40
 
 
 #------ CONFIG ------- # 

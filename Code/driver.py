@@ -60,15 +60,13 @@ def read_config(config_file):
 			inside_parenths = variable.split('(')[1];
 			inside_parenths = inside_parenths.split(')')[0];
 			bounds = inside_parenths.split(',');
-			# value = pm.Uniform(name, float(bounds[0]), float(bounds[1]) );
 			def func():
-				return pm.Normal(name, float(bounds[0]), float(bounds[1]))
+				return pm.Uniform(name, float(bounds[0]), float(bounds[1]))
 			return mcmc_collections.Variable(value=variable, str_value=variable,gen=func, est_flag=1);
 		elif "normal" in variable:
 			inside_parenths = variable.split('(')[1];
 			inside_parenths = inside_parenths.split(')')[0];
 			bounds = inside_parenths.split(',');
-			# value = pm.Normal(name, mu=float(bounds[0]), sigma=float(bounds[1]) );
 			def func():
 				return pm.Normal(name, mu=float(bounds[0]), sigma=float(bounds[1]) );
 			return mcmc_collections.Variable(value=variable, str_value=variable,gen=func, est_flag=1);
@@ -78,7 +76,7 @@ def read_config(config_file):
 	Mag = get_prior_generator(configobj.get('compute-config','Mag'),'Mag');
 	dx = get_prior_generator(configobj.get('compute-config','dx'),'dx');
 	dy = get_prior_generator(configobj.get('compute-config','dy'),'dy');
-	dz = get_prior_generator(configobj.get('compute-config','dz'),'dz');	
+	dz = get_prior_generator(configobj.get('compute-config','dz'),'dz');
 	length = get_prior_generator(configobj.get('compute-config','length'),'length');
 	width = get_prior_generator(configobj.get('compute-config','width'),'width');
 	strike = get_prior_generator(configobj.get('compute-config','strike'),'strike');
