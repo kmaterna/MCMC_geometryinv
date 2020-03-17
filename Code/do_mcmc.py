@@ -10,16 +10,12 @@ import theano.tensor as tt
 import mcmc_collections
 import okada_class
 import conversion_math
-import plotting
+import output_functions
 
 # High level bit: 
 # Here we will build a sampling system
 # We construct priors and initial vector of parameters from the config file. 
 # We sample the posterior distribution many times using MCMC from pymc3
-
-# Next: 
-# Fix the problem with matplotlib
-
 
 # THE MAJOR DRIVER FOR THE CALCULATION
 def sparse_okada_calculation(params, GPSObject):
@@ -136,7 +132,7 @@ def dummy_bayesian_computation():
 	print("MAP Exponent: %.2f +/- %.2f" % (est_exponent, exponent_std) );
 	print("-----------");
 
-	plotting.outputs_trace_plots(trace,'');
+	output_functions.outputs_trace_plots(trace,'');
 
 	return; 
 
