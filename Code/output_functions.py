@@ -1,5 +1,6 @@
 import numpy as np 
 import sys
+import subprocess
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.patches as patches
@@ -54,24 +55,26 @@ def parse_posteriors(params, trace):
 
 
 def outputs_trace_plots(trace, output_dir):
+	if output_dir!="":
+		output_dir=output_dir+"/";
 	# The trace plots
 	fig = plt.figure();
 	ax = fig.add_subplot(111);
 	pm.traceplot(trace);
-	plt.savefig('posterior.png');
+	plt.savefig(output_dir+'posterior.png');
 	plt.close();
 
 	# The corner plot
 	fig = plt.figure();
 	ax = fig.add_subplot(111);
 	pm.pairplot(trace);
-	plt.savefig('corner_plot.png');
+	plt.savefig(output_dir+'corner_plot.png');
 	plt.close();
 	return
 
 
 
-def gps_residual_plot(obsfile, predfile, modelfile):
+def gps_residual_plot(obsfile, predfile, modelfile, output_dir):
 	# NEXT: It will have the fault plane on those figures (conversion math!)
 	# NEXT: Scale bar for horizontals and color bar for verticals
 
@@ -186,7 +189,9 @@ def gps_residual_plot(obsfile, predfile, modelfile):
 	cb.set_label('Vertical (m)', fontsize=18);
 	cb.ax.tick_params(labelsize=16);	
 
-	fig.savefig('residuals.png')
+	if output_dir != "":
+		output_dir=output_dir+"/";
+	fig.savefig(output_dir+'residuals.png')
 
 	return;
 
@@ -194,6 +199,8 @@ def gps_residual_plot(obsfile, predfile, modelfile):
 
 def output_manager(params, trace, GPSObject):
 	# OUTPUTS (THIS IS GENERAL TO ALL TYPES OF INVERSIONS)
+	if params.output_dir != "":
+		subprocess.call(['mkdir','-p',params.output_dir],shell=False);
 	print("----- RESULTS ------");
 	Posteriors = parse_posteriors(params, trace);
 	outputs_trace_plots(trace, params.output_dir);  # This takes a little while
@@ -220,16 +227,16 @@ def output_manager(params, trace, GPSObject):
 		gps_xy_vector=GPSObject.gps_xy_vector, gps_obs_vector=gps_pred_vector);
 	io_gps.gps_output_manager(PredObject, params.pred_file);
 	print("Plotting gps residuals");
-	gps_residual_plot(params.gps_input_file, params.pred_file, params.model_file);
+	gps_residual_plot(params.gps_input_file, params.pred_file, params.model_file, params.output_dir);
 	return;
 
 
 
 if __name__=="__main__":
-	obsfile = "example_gps_6.5_325.txt";
+	obsfile = "../example_gps_6.5_325.txt";
 	predfile= "gps_predicted_model.txt";
 	modelfile="model_results.txt";
-	gps_residual_plot(obsfile, predfile, modelfile);
+	gps_residual_plot(obsfile, predfile, modelfile, "");
 
 
 

@@ -17,7 +17,7 @@ import output_functions
 # We construct priors and initial vector of parameters from the config file. 
 # We sample the posterior distribution many times using MCMC from pymc3
 
-# THE MAJOR DRIVER FOR THE CALCULATION
+# THE MAJOR DRIVER FOR THE SPARSE CALCULATION
 def sparse_okada_calculation(params, GPSObject):
 
 	def sparse_loglike(theta, x, data, sigma):
@@ -51,6 +51,47 @@ def sparse_okada_calculation(params, GPSObject):
 		trace=pm.sample(params.num_iter, tune=params.burn_in);
 
 	return trace;
+
+
+# THE MAJOR DRIVER FOR THE FULL CALCULATION
+def full_okada_calculation(params, GPSObject):
+
+	def full_loglike(theta, x, data, sigma):
+		"""
+		Define a Gaussian log-likelihood function for a model with parameters theta. 
+		Some of these parameters might be floats, or tt.dvectors.
+		"""
+		# In FULL mode, all 9 varaibles are inverted. 
+		strike=theta[0]; dip=theta[1]; rake=theta[2]; 
+		dx=theta[3]; dy=theta[4]; dz=theta[5];
+		length=theta[6]; width=theta[7]; Mag=theta[8];
+
+		# These model parameters are specific for the SPARSE case. 
+		model = okada_class.calc_gps_disp_vector(strike, dip, rake, 
+			dx, dy, dz, Mag, 
+			length, width, params.mu, params.alpha, x);
+
+		return -(0.5/sigma**2)*np.sum((data - model)**2)
+
+
+	# create our Op using the loglike function we just defined. 
+	logl = okada_class.LogLike(full_loglike, GPSObject.gps_obs_vector, 
+		GPSObject.gps_xy_vector, params.data_sigma);
+
+	# The actual Bayesian inference for model parameters. 
+	with pm.Model() as model:
+
+		# Getting variables ready. Constants are defined in sparse_loglike. 
+		theta = tt.as_tensor_variable([params.strike.gen(), params.dip.gen(), 
+			params.rake.gen(), params.dx.gen(), params.dy.gen(), params.dz.gen(),
+			params.length.gen(), params.width.gen(), params.Mag.gen()]);
+
+		# Use a DensityDist (use a lamdba function to "call" the Op). Sample dist. 
+		pm.DensityDist('likelihood', lambda v: logl(v), observed={'v': theta})
+		trace=pm.sample(params.num_iter, tune=params.burn_in);
+
+	return trace;
+
 
 
 def dummy_bayesian_computation():

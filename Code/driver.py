@@ -39,6 +39,11 @@ def read_config(config_file):
 	model_file=configobj.get('io-config','model_file');
 	pred_file=configobj.get('io-config','pred_file');
 	title=configobj.get('io-config','title');
+	if output_dir != "":
+		model_file=output_dir+"/"+model_file;
+		pred_file=output_dir+"/"+pred_file;
+
+	# MCMC parameters
 	num_iter=configobj.getint('mcmc-config','num_iter');
 	burn_in=configobj.getint('mcmc-config','burn_in');
 	step_size=configobj.getfloat('mcmc-config','step_size');
@@ -116,6 +121,9 @@ def do_geometry_computation(params, GPSObject):
 	if params.mode=="SPARSE":
 		trace = do_mcmc.sparse_okada_calculation(params, GPSObject);
 		output_functions.output_manager(params, trace, GPSObject);
+	if params.mode=="FULL":
+		trace = do_mcmc.full_okada_calculation(params, GPSObject);
+		output_functions.output_manager(params, trace, GPSObject);		
 	return;
 
 
