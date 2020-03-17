@@ -52,17 +52,17 @@ def gps_residual_plot(obsfile, predfile, modelfile):
 	ifile=open(modelfile,'r');
 	for line in ifile:
 		if " strike" in line:
-			strike=float(line.split()[2]);
+			strike=float(line.split()[1]);
 		if " length" in line:
-			length=float(line.split()[2]);
+			length=float(line.split()[1]);
 		if " width" in line:
-			width=float(line.split()[2]);
+			width=float(line.split()[1]);
 		if " dip" in line:
-			dip=float(line.split()[2]);
+			dip=float(line.split()[1]);
 		if " dx" in line:
-			dx=float(line.split()[2]);
+			dx=float(line.split()[1]);
 		if " dy" in line:
-			dy=float(line.split()[2]);	
+			dy=float(line.split()[1]);	
 		if "lon0" in line:
 			lon0=float(line.split()[1]);
 		if "lat0" in line:
