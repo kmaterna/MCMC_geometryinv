@@ -4,7 +4,6 @@ import subprocess
 import matplotlib
 import matplotlib.cm as cm
 import matplotlib.patches as patches
-matplotlib.use('PS')  # forces a certain backend behavior of matplotlib on macosx for pymc3
 import pymc3 as pm
 import matplotlib.pyplot as plt 
 import theano.tensor as tt

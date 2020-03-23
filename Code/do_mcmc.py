@@ -3,7 +3,6 @@
 import numpy as np 
 import sys
 import matplotlib
-matplotlib.use('PS')  # forces a certain backend behavior of matplotlib on macosx for pymc3
 import pymc3 as pm
 import matplotlib.pyplot as plt 
 import theano.tensor as tt

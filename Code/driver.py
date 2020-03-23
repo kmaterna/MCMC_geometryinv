@@ -7,7 +7,6 @@ import io_gps
 import do_mcmc
 import output_functions
 import matplotlib
-matplotlib.use('PS')  # forces a certain backend behavior of matplotlib on macosx for pymc3
 import pymc3 as pm
 
 def do_calculation():
@@ -46,7 +45,6 @@ def read_config(config_file):
 	# MCMC parameters
 	num_iter=configobj.getint('mcmc-config','num_iter');
 	burn_in=configobj.getint('mcmc-config','burn_in');
-	step_size=configobj.getfloat('mcmc-config','step_size');
 
 	# Compute Parameters and Other Parameters
 	mode=configobj.get('compute-config','mode');
@@ -89,7 +87,7 @@ def read_config(config_file):
 	rake = get_prior_generator(configobj.get('compute-config','rake'),'rake');	
 
 	Params = mcmc_collections.Params(gps_input_file=gps_input_file, num_iter=num_iter, 
-		burn_in=burn_in, step_size=step_size, mode=mode, mu=mu, alpha=alpha, 
+		burn_in=burn_in, mode=mode, mu=mu, alpha=alpha, 
 		lon0=lon0, lat0=lat0, Mag=Mag, style=style, dx=dx, dy=dy, dz=dz, length=length, 
 		width=width, strike=strike, dip=dip, rake=rake, data_sigma=data_sigma, 
 		output_dir=output_dir, model_file=model_file, pred_file=pred_file, title=title);

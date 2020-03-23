@@ -6,7 +6,6 @@ Params = collections.namedtuple('Params',[
 	'gps_input_file',
 	'num_iter',
 	'burn_in',
-	'step_size',
 	'mode',
 	'mu','alpha',
 	'lon0','lat0',
