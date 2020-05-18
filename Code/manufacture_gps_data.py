@@ -7,7 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt 
 import random
 import okada_class
-import io_gps
+import io_gps_mcmc
 import conversion_math
 
 
@@ -79,7 +79,7 @@ def make_data_dc3d():
 	plt.plot(lon0, lat0, '.r',marker='o');
 	plt.savefig("Displacement_model_"+str(Mw)+'_'+str(strike)+".png");
 	
-	io_gps.write_gps_file(gps_lon, gps_lat, ux, uy, uz, outname);
+	io_gps_mcmc.write_gps_file(gps_lon, gps_lat, ux, uy, uz, outname);
 	return;
 
 if __name__=="__main__":

@@ -3,7 +3,7 @@
 import sys
 import argparse, configparser
 import mcmc_collections
-import io_gps
+import io_gps_mcmc
 import do_mcmc
 import output_functions
 import matplotlib
@@ -12,7 +12,7 @@ import pymc3 as pm
 def do_calculation():
 	args = welcome_and_parse();
 	params = read_config(args.config);
-	gps_inputs = io_gps.gps_input_manager(params);
+	gps_inputs = io_gps_mcmc.gps_input_manager(params);
 	do_geometry_computation(params, gps_inputs);
 	return;
 

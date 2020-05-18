@@ -10,7 +10,7 @@ import theano.tensor as tt
 import mcmc_collections
 import conversion_math
 import okada_class
-import io_gps
+import io_gps_mcmc
 
 
 # UTILITY AND OUTPUT FUNCTIONS
@@ -77,8 +77,8 @@ def gps_residual_plot(obsfile, predfile, modelfile, output_dir):
 	# NEXT: It will have the fault plane on those figures (conversion math!)
 	# NEXT: Scale bar for horizontals and color bar for verticals
 
-	[gps_lon, gps_lat, ux_obs, uy_obs, uz_obs]=io_gps.read_gps_file(obsfile);
-	[gps_lon, gps_lat, ux_pred, uy_pred, uz_pred]=io_gps.read_gps_file(predfile);
+	[gps_lon, gps_lat, ux_obs, uy_obs, uz_obs]=io_gps_mcmc.read_gps_file(obsfile);
+	[gps_lon, gps_lat, ux_pred, uy_pred, uz_pred]=io_gps_mcmc.read_gps_file(predfile);
 	ux_obs=np.multiply(ux_obs, 1000);
 	uy_obs=np.multiply(uy_obs, 1000);
 	uz_obs=np.multiply(uz_obs, 1000);
@@ -224,7 +224,7 @@ def output_manager(params, trace, GPSObject):
 		params.mu, params.alpha, GPSObject.gps_xy_vector); 
 	PredObject = mcmc_collections.GPS_disp_object(gps_ll_vector=GPSObject.gps_ll_vector, 
 		gps_xy_vector=GPSObject.gps_xy_vector, gps_obs_vector=gps_pred_vector);
-	io_gps.gps_output_manager(PredObject, params.pred_file);
+	io_gps_mcmc.gps_output_manager(PredObject, params.pred_file);
 	print("Plotting gps residuals");
 	gps_residual_plot(params.gps_input_file, params.pred_file, params.model_file, params.output_dir);
 	return;
